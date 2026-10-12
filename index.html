@@ -8,7 +8,7 @@
   <style>
     body { font-family: sans-serif; text-align: center; background: #f4f4f9; padding: 15px; color: #333; margin: 0; }
     
-    /* Tarjeta contenedora principal para mantener video y reacciones fijos y juntos */
+    /* Contenedor principal para mantener video y reacciones fijos y juntos */
     .app-container { max-width: 480px; margin: 0 auto; background: #ffffff; padding: 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
 
     /* Video sin controles y bloqueado a clics directos */
@@ -45,7 +45,6 @@
   <div class="app-container">
     <h3 style="margin-top: 0; font-size: 16px; color: #444;">Mira el video y reacciona:</h3>
     
-    <!-- Se agrega preload="auto" para asegurar la carga inmediata en móviles -->
     <video id="myVideo" playsinline webkit-playsinline preload="auto">
       <source src="https://www.dropbox.com/scl/fi/8csvf9ixg1cjqz8wtazot/TRES-GRACIAS-CAP-TULO-1.mp4?rlkey=sxfknztdqsrwlu0y6lrrdec74&st=eiip6dfe&raw=1" type="video/mp4">
       Tu navegador no soporta el reproductor.
@@ -80,12 +79,24 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
     
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJg6ow8iXwic4G9gtCRrLXMd9LXmCclcYU49EhF3RKXNscxWu3tTjGimp8q2L0uvn7/exec";
+    const SCRIPT_URL = "https://researchonlinecl.github.io/reacciones-MODERADORF/";
     const video = document.getElementById('myVideo');
     
-    let user = "Anónimo";
+    let user = localStorage.getItem('userName') || "Anónimo";
+    let maxTimeWatched = parseFloat(localStorage.getItem('videoProgress')) || 0;
     let started = false;
-    let lastValidTime = 0;
+
+    // Si ya se registró antes, salta el modal y ubica el video donde iba
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedUser = localStorage.getItem('userName');
+      if (savedUser) {
+        user = savedUser;
+        document.getElementById('nameModal').style.display = 'none';
+        video.currentTime = maxTimeWatched;
+        video.load();
+        video.play().catch(e => console.log(e));
+      }
+    });
 
     function submitName() {
       const firstName = document.getElementById('firstNameInput').value.trim();
@@ -93,13 +104,12 @@
       
       if (firstName && lastName) {
         user = firstName + " " + lastName;
+        localStorage.setItem('userName', user);
         document.getElementById('nameModal').style.display = 'none';
         
-        // Forzamos la carga y reproducción inmediata permitida por el gesto del usuario
+        video.currentTime = maxTimeWatched;
         video.load();
-        video.play().catch(error => {
-          console.log("Error al iniciar video:", error);
-        });
+        video.play().catch(e => console.log(e));
       } else {
         alert("Por favor completa tu nombre y apellido.");
       }
@@ -108,7 +118,7 @@
     video.onplay = () => {
       if (!started) {
         started = true;
-        sendData({ user: user, event: "Inicio de reproduccion", timestamp: "00:00" });
+        sendData({ user: user, event: "Inicio de reproduccion", timestamp: formatTime(maxTimeWatched) });
       }
     };
 
@@ -119,15 +129,18 @@
       }
     });
 
-    // Control estricto de tiempo (impide adelantar o retroceder)
+    // Control de tiempo y guardado automático en el celular del usuario
     video.addEventListener('timeupdate', () => {
       if (!started) return;
       
-      const diff = video.currentTime - lastValidTime;
-      if (diff > 1.5 || video.currentTime < lastValidTime) {
-        video.currentTime = lastValidTime;
-      } else {
-        lastValidTime = video.currentTime;
+      if (video.currentTime > maxTimeWatched) {
+        maxTimeWatched = video.currentTime;
+        localStorage.setItem('videoProgress', maxTimeWatched);
+      }
+      
+      const diff = video.currentTime - maxTimeWatched;
+      if (diff > 1.5 || video.currentTime < maxTimeWatched) {
+        video.currentTime = maxTimeWatched;
       }
     });
 
