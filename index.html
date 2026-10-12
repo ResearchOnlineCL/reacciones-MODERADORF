@@ -8,7 +8,7 @@
   <style>
     body { font-family: sans-serif; text-align: center; background: #f4f4f9; padding: 15px; color: #333; margin: 0; }
     
-    /* Contenedor principal para mantener video y reacciones fijos y juntos */
+    /* Tarjeta contenedora principal para mantener video y reacciones fijos y juntos */
     .app-container { max-width: 480px; margin: 0 auto; background: #ffffff; padding: 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
 
     /* Video sin controles y bloqueado a clics directos */
@@ -45,12 +45,13 @@
   <div class="app-container">
     <h3 style="margin-top: 0; font-size: 16px; color: #444;">Mira el video y reacciona:</h3>
     
-    <video id="myVideo" playsinline webkit-playsinline>
+    <!-- Se agrega preload="auto" para asegurar la carga inmediata en móviles -->
+    <video id="myVideo" playsinline webkit-playsinline preload="auto">
       <source src="https://www.dropbox.com/scl/fi/8csvf9ixg1cjqz8wtazot/TRES-GRACIAS-CAP-TULO-1.mp4?rlkey=sxfknztdqsrwlu0y6lrrdec74&st=eiip6dfe&raw=1" type="video/mp4">
       Tu navegador no soporta el reproductor.
     </video>
 
-    <!-- Tarjetas de reacción personalizadas[cite: 2] -->
+    <!-- Tarjetas de reacción personalizadas -->
     <div class="emoji-bar">
       <button class="card-btn" onclick="sendReaction('🔥 Me engancha')">
         <span class="emoji">🔥</span>
@@ -79,9 +80,7 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
     
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJg6ow8iXwic4G9gtCRrLXMd9LXmCclcYU49EhF3RKXNscxWu3tTjGimp8q2L0uvn7/exec
-
-;
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJg6ow8iXwic4G9gtCRrLXMd9LXmCclcYU49EhF3RKXNscxWu3tTjGimp8q2L0uvn7/exec";
     const video = document.getElementById('myVideo');
     
     let user = "Anónimo";
@@ -95,7 +94,12 @@
       if (firstName && lastName) {
         user = firstName + " " + lastName;
         document.getElementById('nameModal').style.display = 'none';
-        video.play().catch(e => console.log(e));
+        
+        // Forzamos la carga y reproducción inmediata permitida por el gesto del usuario
+        video.load();
+        video.play().catch(error => {
+          console.log("Error al iniciar video:", error);
+        });
       } else {
         alert("Por favor completa tu nombre y apellido.");
       }
