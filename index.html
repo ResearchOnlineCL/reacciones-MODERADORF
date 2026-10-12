@@ -21,7 +21,7 @@
     .emoji { font-size: 22px; margin-bottom: 4px; display: block; }
     .label { font-size: 9.5px; color: #333; font-weight: bold; text-align: center; line-height: 1.1; }
 
-    /* Ventana flotante obligatoria de Nombre y Apellido */
+    /* Ventana flotante obligatoria */
     #nameModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 9999; }
     .modal-box { background: white; padding: 25px; border-radius: 16px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
     .modal-box input { width: 90%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 12px; outline: none; }
@@ -30,20 +30,26 @@
 </head>
 <body>
 
-  <!-- Ventana obligatoria para pedir Nombre y Apellido -->
+  <!-- Ventana flotante dinámica -->
   <div id="nameModal">
     <div class="modal-box">
-      <h3>Identifícate</h3>
-      <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Ingresa tus datos para continuar:</p>
-      <input type="text" id="firstNameInput" placeholder="Nombre">
-      <input type="text" id="lastNameInput" placeholder="Apellido">
-      <button onclick="submitName()">Comenzar Video</button>
+      <h3 id="modalTitle">Identifícate</h3>
+      <p id="modalDesc" style="font-size: 14px; color: #666; margin-bottom: 15px;">Ingresa tus datos para continuar:</p>
+      
+      <div id="inputGroup">
+        <input type="text" id="firstNameInput" placeholder="Nombre">
+        <input type="text" id="lastNameInput" placeholder="Apellido">
+      </div>
+      
+      <button id="modalBtn" onclick="submitName()">Comenzar Video</button>
     </div>
   </div>
 
   <!-- Contenedor unificado -->
   <div class="app-container">
-    <h3 style="margin-top: 0; font-size: 16px; color: #444;">Mira el video y reacciona:</h3>
+    <h3 style="margin-top: 0; font-size: 14px; color: #444; line-height: 1.3; text-align: left;">
+      Ve el video y marca los emoji. Dinos lo que sientas en todo momento, en un cambio de escena, entrada de un personaje o simplemente confirmanos tu sentimiento apretando el mismo emoji.
+    </h3>
     
     <video id="myVideo" playsinline webkit-playsinline preload="auto">
       <source src="PEGA_AQUI_TU_ENLACE_DE_DROPBOX_CON_RAW=1" type="video/mp4">
@@ -86,39 +92,48 @@
     let maxTimeWatched = parseFloat(localStorage.getItem('videoProgress')) || 0;
     let started = false;
 
-    // Si ya se registró antes, salta el modal y ubica el video donde iba
+    // Si ya se registró antes, adaptamos el modal para ofrecer el botón de continuar (gesto válido)
     window.addEventListener('DOMContentLoaded', () => {
       const savedUser = localStorage.getItem('userName');
       if (savedUser) {
         user = savedUser;
-        document.getElementById('nameModal').style.display = 'none';
-        video.currentTime = maxTimeWatched;
-        video.load();
-        video.play().catch(e => console.log(e));
+        document.getElementById('modalTitle').innerText = "¡Hola, " + user + "!";
+        document.getElementById('modalDesc').innerText = "Haz clic para continuar viendo el video donde lo dejaste:";
+        document.getElementById('inputGroup').style.display = 'none';
+        document.getElementById('modalBtn').innerText = "Continuar Video";
       }
     });
 
     function submitName() {
-      const firstName = document.getElementById('firstNameInput').value.trim();
-      const lastName = document.getElementById('lastNameInput').value.trim();
+      const savedUser = localStorage.getItem('userName');
       
-      if (firstName && lastName) {
-        user = firstName + " " + lastName;
-        localStorage.setItem('userName', user);
-        document.getElementById('nameModal').style.display = 'none';
+      if (!savedUser) {
+        const firstName = document.getElementById('firstNameInput').value.trim();
+        const lastName = document.getElementById('lastNameInput').value.trim();
         
-        video.currentTime = maxTimeWatched;
-        video.load();
-        video.play().catch(e => console.log(e));
-      } else {
-        alert("Por favor completa tu nombre y apellido.");
+        if (firstName && lastName) {
+          user = firstName + " " + lastName;
+          localStorage.setItem('userName', user);
+        } else {
+          alert("Por favor completa tu nombre y apellido.");
+          return;
+        }
       }
+      
+      // Oculta la ventana flotante
+      document.getElementById('nameModal').style.display = 'none';
+      
+      // Aplica el tiempo guardado y reproduce dentro del toque del usuario
+      if (maxTimeWatched > 0) {
+        video.currentTime = maxTimeWatched;
+      }
+      video.play().catch(e => console.log("Error al reproducir:", e));
     }
 
     video.onplay = () => {
       if (!started) {
         started = true;
-        sendData({ user: user, event: "Inicio de reproduccion", timestamp: formatTime(maxTimeWatched) });
+        sendData({ user: user, event: "Inicio de reproduccion", timestamp: formatStringTime(maxTimeWatched) });
       }
     };
 
@@ -144,14 +159,14 @@
       }
     });
 
-    function formatTime(seconds) {
+    function formatStringTime(seconds) {
       const mins = Math.floor(seconds / 60);
       const secs = Math.floor(seconds % 60);
       return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
 
     function sendReaction(reactionText) {
-      const currentTimeFormatted = formatTime(video.currentTime);
+      const currentTimeFormatted = formatStringTime(video.currentTime);
       sendData({
         user: user,
         event: "Reaccion Emoji",
