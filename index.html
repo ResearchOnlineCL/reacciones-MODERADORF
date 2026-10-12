@@ -43,10 +43,12 @@
 
   <!-- Contenedor unificado -->
   <div class="app-container">
-    <h3 style="margin-top: 0; font-size: 16px; color: #444;">Mira el video y reacciona:</h3>
+    <h3 style="margin-top: 0; font-size: 14px; color: #444; line-height: 1.3; text-align: left;">
+      Ve el video y marca los emoji. Dinos lo que sientas en todo momento, en un cambio de escena, entrada de un personaje o simplemente confirmanos tu sentimiento apretando el mismo emoji.
+    </h3>
     
     <video id="myVideo" playsinline webkit-playsinline preload="auto">
-      <source src="https://www.dropbox.com/scl/fi/8csvf9ixg1cjqz8wtazot/TRES-GRACIAS-CAP-TULO-1.mp4?rlkey=sxfknztdqsrwlu0y6lrrdec74&st=eiip6dfe&raw=1" type="video/mp4">
+      <source src="PEGA_AQUI_TU_ENLACE_DE_DROPBOX_CON_RAW=1" type="video/mp4">
       Tu navegador no soporta el reproductor.
     </video>
 
@@ -79,14 +81,13 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
     
-    const SCRIPT_URL = "https://researchonlinecl.github.io/reacciones-MODERADORF/";
+    const SCRIPT_URL = "PEGA_AQUI_TU_URL_DE_GOOGLE_APPS_SCRIPT";
     const video = document.getElementById('myVideo');
     
     let user = localStorage.getItem('userName') || "Anónimo";
     let maxTimeWatched = parseFloat(localStorage.getItem('videoProgress')) || 0;
     let started = false;
 
-    // Si ya se registró antes, salta el modal y ubica el video donde iba
     window.addEventListener('DOMContentLoaded', () => {
       const savedUser = localStorage.getItem('userName');
       if (savedUser) {
@@ -144,14 +145,18 @@
       }
     });
 
-    function formatTime(seconds) {
+    function formatStringTime(seconds) {
       const mins = Math.floor(seconds / 60);
       const secs = Math.floor(seconds % 60);
       return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
 
+    function formatTime(seconds) {
+      return formatStringTime(seconds);
+    }
+
     function sendReaction(reactionText) {
-      const currentTimeFormatted = formatTime(video.currentTime);
+      const currentTimeFormatted = formatStringTime(video.currentTime);
       sendData({
         user: user,
         event: "Reaccion Emoji",
