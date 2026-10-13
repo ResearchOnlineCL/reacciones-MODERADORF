@@ -8,7 +8,7 @@
   <style>
     body { font-family: sans-serif; text-align: center; background: #f4f4f9; padding: 5px; color: #333; margin: 0; }
     
-    /* Contenedor ampliado para maximizar el tamaño del video */
+    /* Contenedor ampliado para maximizar el tamaño del video en PC y móvil */
     .app-container { max-width: 650px; margin: 0 auto; background: #ffffff; padding: 10px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); box-sizing: border-box; }
 
     /* Video optimizado al 100% del ancho del contenedor */
@@ -30,7 +30,7 @@
 </head>
 <body>
 
-  <!-- Ventana flotante de identificación / continuación -->
+  <!-- Ventana flotante de identificación / continuación con enlace de reinicio -->
   <div id="nameModal">
     <div class="modal-box">
       <h3 id="modalTitle">Identifícate</h3>
@@ -42,6 +42,11 @@
       </div>
       
       <button id="modalBtn" onclick="submitName()">Comenzar Video</button>
+      
+      <!-- Enlace para reiniciar o cambiar de usuario -->
+      <div id="resetContainer" style="display: none; margin-top: 15px;">
+        <a href="#" onclick="resetUser()" style="color: #0088cc; font-size: 12px; text-decoration: underline;">¿No eres tú? O empezar desde cero</a>
+      </div>
     </div>
   </div>
 
@@ -49,7 +54,7 @@
   <div class="app-container">
     <h3 style="margin-top: 0; font-size: 12px; color: #444; line-height: 1.3; text-align: left; font-weight: normal; margin-bottom: 8px;">
       <strong>¡Ve el video y reacciona activamente con los emojis!</strong> Cuéntanos qué sientes en cada momento: cuando cambie la escena, aparezca un personaje o simplemente quieras expresar o confirmar una emoción, ¡presiona el emoji que mejor te represente!<br>
-      <span style="color: #d9534f; font-weight: bold;">Importante: ¡No dejes pasar más de 2 minutos sin marcar un emoji!</span>
+      <span style="color: #d9534f; font-weight: bold;">Importante: ¡No dejes pasar más de 1 minuto sin marcar un emoji!</span>
     </h3>
     
     <video id="myVideo" playsinline webkit-playsinline preload="auto" muted>
@@ -86,7 +91,7 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
     
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJg6ow8iXwic4G9gtCRrLXMd9LXmCclcYU49EhF3RKXNscxWu3tTjGimp8q2L0uvn7/exec";
+    const SCRIPT_URL = "https://researchonlinecl.github.io/reacciones-MODERADORF/";
     const video = document.getElementById('myVideo');
     
     let user = localStorage.getItem('userName') || "Anónimo";
@@ -101,8 +106,18 @@
         document.getElementById('modalDesc').innerText = "Haz clic para continuar viendo el video donde lo dejaste:";
         document.getElementById('inputGroup').style.display = 'none';
         document.getElementById('modalBtn').innerText = "Continuar Video";
+        document.getElementById('resetContainer').style.display = 'block'; // Muestra el enlace
       }
     });
+
+    // Función que limpia la memoria y recarga para empezar de cero
+    function resetUser() {
+      if (confirm("¿Deseas reiniciar la reproducción y cambiar de usuario?")) {
+        localStorage.removeItem('userName');
+        localStorage.removeItem('videoProgress');
+        location.reload();
+      }
+    }
 
     function submitName() {
       const savedUser = localStorage.getItem('userName');
@@ -147,7 +162,7 @@
       }
     });
 
-    // Control de tiempo y guardado automático en el celular del usuario
+    // Control de tiempo y guardado automático
     video.addEventListener('timeupdate', () => {
       if (!started) return;
       
