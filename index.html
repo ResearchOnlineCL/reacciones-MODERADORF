@@ -8,29 +8,26 @@
   <style>
     body { font-family: sans-serif; text-align: center; background: #f4f4f9; padding: 5px; color: #333; margin: 0; }
     
-    /* Contenedor ampliado para maximizar el tamaño del video en PC y móvil */
     .app-container { max-width: 650px; margin: 0 auto; background: #ffffff; padding: 10px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); box-sizing: border-box; }
 
-    /* Video optimizado al 100% del ancho del contenedor */
     video { width: 100%; border-radius: 10px; pointer-events: none; display: block; max-height: 65vh; object-fit: contain; background: #000; }
     
-    /* Barra de tarjetas de reacción personalizadas */
     .emoji-bar { display: flex; justify-content: space-between; gap: 4px; margin-top: 10px; }
     .card-btn { background: #ffffff; border: 2px solid #e0e0e0; border-radius: 10px; width: 19%; padding: 8px 2px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: transform 0.1s, border-color 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .card-btn:active { transform: scale(1.08); background: #f0f4f8; border-color: #0088cc; }
     .emoji { font-size: 22px; margin-bottom: 2px; display: block; }
     .label { font-size: 9px; color: #333; font-weight: bold; text-align: center; line-height: 1.1; }
 
-    /* Ventana flotante obligatoria */
     #nameModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 9999; }
     .modal-box { background: white; padding: 25px; border-radius: 16px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-    .modal-box input { width: 90%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 12px; outline: none; }
+    .modal-box input { width: 90%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 12px; outline: none; transition: border-color 0.2s; }
+    .modal-box input.error { border-color: #d9534f !important; background-color: #fff8f8; }
     .modal-box button { background: #0088cc; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
   </style>
 </head>
 <body>
 
-  <!-- Ventana flotante de identificación / continuación con enlace de reinicio -->
+  <!-- Ventana flotante de identificación / continuación -->
   <div id="nameModal">
     <div class="modal-box">
       <h3 id="modalTitle">Identifícate</h3>
@@ -45,12 +42,11 @@
       
       <!-- Enlace para reiniciar o cambiar de usuario -->
       <div id="resetContainer" style="display: none; margin-top: 15px;">
-        <a href="#" onclick="resetUser()" style="color: #0088cc; font-size: 12px; text-decoration: underline;">¿No eres tú? O empezar desde cero</a>
+        <a href="#" onclick="resetUser(event)" style="color: #0088cc; font-size: 12px; text-decoration: underline;">¿No eres tú? O empezar desde cero</a>
       </div>
     </div>
   </div>
 
-  <!-- Contenedor unificado -->
   <div class="app-container">
     <h3 style="margin-top: 0; font-size: 12px; color: #444; line-height: 1.3; text-align: left; font-weight: normal; margin-bottom: 8px;">
       <strong>¡Ve el video y reacciona activamente con los emojis!</strong> Cuéntanos qué sientes en cada momento: cuando cambie la escena, aparezca un personaje o simplemente quieras expresar o confirmar una emoción, ¡presiona el emoji que mejor te represente!<br>
@@ -62,7 +58,6 @@
       Tu navegador no soporta el reproductor.
     </video>
 
-    <!-- Tarjetas de reacción personalizadas -->
     <div class="emoji-bar">
       <button class="card-btn" onclick="sendReaction('🔥 Me engancha')">
         <span class="emoji">🔥</span>
@@ -99,6 +94,10 @@
     let started = false;
 
     window.addEventListener('DOMContentLoaded', () => {
+      checkExistingUser();
+    });
+
+    function checkExistingUser() {
       const savedUser = localStorage.getItem('userName');
       if (savedUser) {
         user = savedUser;
@@ -106,16 +105,32 @@
         document.getElementById('modalDesc').innerText = "Haz clic para continuar viendo el video donde lo dejaste:";
         document.getElementById('inputGroup').style.display = 'none';
         document.getElementById('modalBtn').innerText = "Continuar Video";
-        document.getElementById('resetContainer').style.display = 'block'; // Muestra el enlace
+        document.getElementById('resetContainer').style.display = 'block';
+      } else {
+        document.getElementById('modalTitle').innerText = "Identifícate";
+        document.getElementById('modalDesc').innerText = "Ingresa tus datos para continuar:";
+        document.getElementById('inputGroup').style.display = 'block';
+        document.getElementById('modalBtn').innerText = "Comenzar Video";
+        document.getElementById('resetContainer').style.display = 'none';
       }
-    });
+    }
 
-    // Función que limpia la memoria y recarga para empezar de cero
-    function resetUser() {
+    // Reinicia el estado sin congelar la app ni requerir recarga
+    function resetUser(event) {
+      if (event) event.preventDefault();
+      
       if (confirm("¿Deseas reiniciar la reproducción y cambiar de usuario?")) {
         localStorage.removeItem('userName');
         localStorage.removeItem('videoProgress');
-        location.reload();
+        maxTimeWatched = 0;
+        started = false;
+        
+        document.getElementById('firstNameInput').value = "";
+        document.getElementById('lastNameInput').value = "";
+        document.getElementById('firstNameInput').classList.remove('error');
+        document.getElementById('lastNameInput').classList.remove('error');
+        
+        checkExistingUser();
       }
     }
 
@@ -123,16 +138,34 @@
       const savedUser = localStorage.getItem('userName');
       
       if (!savedUser) {
-        const firstName = document.getElementById('firstNameInput').value.trim();
-        const lastName = document.getElementById('lastNameInput').value.trim();
+        const firstNameInput = document.getElementById('firstNameInput');
+        const lastNameInput = document.getElementById('lastNameInput');
         
-        if (firstName && lastName) {
-          user = firstName + " " + lastName;
-          localStorage.setItem('userName', user);
+        const firstName = firstNameInput.value.trim();
+        const lastName = lastNameInput.value.trim();
+        
+        let valid = true;
+        
+        if (!firstName) {
+          firstNameInput.classList.add('error');
+          valid = false;
         } else {
-          alert("Por favor completa tu nombre y apellido.");
-          return;
+          firstNameInput.classList.remove('error');
         }
+        
+        if (!lastName) {
+          lastNameInput.classList.add('error');
+          valid = false;
+        } else {
+          lastNameInput.classList.remove('error');
+        }
+        
+        if (!valid) {
+          return; // Detiene la ejecución limpia sin congelar la ventana
+        }
+        
+        user = firstName + " " + lastName;
+        localStorage.setItem('userName', user);
       }
       
       document.getElementById('nameModal').style.display = 'none';
@@ -140,6 +173,8 @@
       
       if (maxTimeWatched > 0) {
         video.currentTime = maxTimeWatched;
+      } else {
+        video.currentTime = 0;
       }
       
       video.play().catch(e => {
@@ -155,14 +190,12 @@
       }
     };
 
-    // Bloqueo de Pausa
     video.addEventListener('pause', () => {
       if (!video.ended && started) {
         video.play();
       }
     });
 
-    // Control de tiempo y guardado automático
     video.addEventListener('timeupdate', () => {
       if (!started) return;
       
